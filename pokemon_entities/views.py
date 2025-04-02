@@ -2,8 +2,9 @@ import folium
 import json
 
 from django.http import HttpResponseNotFound
-from django.shortcuts import render
-from .models import Pokemon, PokemonEntity 
+from django.shortcuts import render, get_object_or_404
+from .models import Pokemon, PokemonEntity
+from django.utils import timezone 
 
 
 MOSCOW_CENTER = [55.751244, 37.618423]
@@ -15,6 +16,7 @@ DEFAULT_IMAGE_URL = (
 
 
 def add_pokemon(folium_map, lat, lon, image_url=DEFAULT_IMAGE_URL):
+
     icon = folium.features.CustomIcon(
         image_url,
         icon_size=(50, 50),
@@ -28,26 +30,32 @@ def add_pokemon(folium_map, lat, lon, image_url=DEFAULT_IMAGE_URL):
 
 
 def show_all_pokemons(request):
-    pokemons_entities = PokemonEntity.objects.select_related('pokemon')
+    current_time = timezone.localtime()
+
     folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
 
-    for pokemon_entity in pokemons_entities:
+    active_pokemon_entities = PokemonEntity.objects.filter(
+        appeared_at__lte=current_time,
+        disappeared_at__gt=current_time
+    ).select_related('pokemon')
+
+    pokemons_on_page = []
+    for pokemon_entity in active_pokemon_entities:
+        pokemon = pokemon_entity.pokemon
         add_pokemon(
             folium_map,
             pokemon_entity.latitude,
             pokemon_entity.longitude,
-            request.build_absolute_uri(pokemon_entity.pokemon.image.url) if pokemon_entity.pokemon.image else DEFAULT_IMAGE_URL
+            request.build_absolute_uri(pokemon.image.url) if pokemon.image else DEFAULT_IMAGE_URL
         )
-        print(f"IMAGE URL: {pokemon_entity.pokemon.image.url}")
+        
 
-    pokemons_on_page = []
-    for pokemon_entity in pokemons_entities:
         pokemons_on_page.append({
-            'pokemon_id': pokemon_entity.pokemon.id,
-            'img_url': request.build_absolute_uri(pokemon_entity.pokemon.image.url) if pokemon_entity.pokemon.image else DEFAULT_IMAGE_URL,
-            'title_ru': pokemon_entity.pokemon.title,
+            'pokemon_id': pokemon.id,
+            'img_url': request.build_absolute_uri(pokemon.image.url) if pokemon.image else DEFAULT_IMAGE_URL,
+            'title_ru': pokemon.title,
         })
-        print(f"IMAGE URL: {pokemon_entity.pokemon.image.url}")
+
 
     return render(request, 'mainpage.html', context={
         'map': folium_map._repr_html_(),
@@ -57,24 +65,34 @@ def show_all_pokemons(request):
 
 
 def show_pokemon(request, pokemon_id):
-    with open('pokemon_entities/pokemons.json', encoding='utf-8') as database:
-        pokemons = json.load(database)['pokemons']
-
-    for pokemon in pokemons:
-        if pokemon['pokemon_id'] == int(pokemon_id):
-            requested_pokemon = pokemon
-            break
-    else:
-        return HttpResponseNotFound('<h1>Такой покемон не найден</h1>')
+    requested_pokemon = get_object_or_404(Pokemon, id=pokemon_id)
+    current_time = timezone.localtime()
 
     folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
-    for pokemon_entity in requested_pokemon['entities']:
+
+    active_pokemon_entities = PokemonEntity.objects.filter(
+        pokemon=requested_pokemon,
+        appeared_at__lte=current_time,
+        disappeared_at__gt=current_time
+    )
+
+    for pokemon_entity in active_pokemon_entities:
         add_pokemon(
-            folium_map, pokemon_entity['lat'],
-            pokemon_entity['lon'],
-            pokemon['img_url']
+            folium_map,
+            pokemon_entity.latitude,
+            pokemon_entity.longitude,
+            request.build_absolute_uri(requested_pokemon.image.url) if requested_pokemon.image else DEFAULT_IMAGE_URL
         )
 
+    
+    pokemon_description = {
+        'pokemon_id': requested_pokemon.id,
+        'title_ru': requested_pokemon.title,
+        'img_url': request.build_absolute_uri(requested_pokemon.image.url) if requested_pokemon.image else DEFAULT_IMAGE_URL,
+        'entities': active_pokemon_entities,
+    }
+    
+
     return render(request, 'pokemon.html', context={
-        'map': folium_map._repr_html_(), 'pokemon': pokemon
+        'map': folium_map._repr_html_(), 'pokemon': pokemon_description
     })
