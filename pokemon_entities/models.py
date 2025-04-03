@@ -2,11 +2,15 @@ from django.db import models  # noqa F401
 from django.utils.timezone import datetime
 
 class Pokemon(models.Model):
-    title = models.CharField(max_length=200, blank=True)
-    image = models.ImageField(upload_to='pokemons_images/', blank=True)
+    title = models.CharField(max_length=200, blank=True, verbose_name='Название')
+    image = models.ImageField(upload_to='pokemons_images/', blank=True, verbose_name='Изображение')
     description = models.TextField(blank=True, null=True, verbose_name='Описание')
     title_en = models.CharField(max_length=255, blank=True, null=True, verbose_name='Английское название') 
-    title_jp = models.CharField(max_length=255, blank=True, null=True, verbose_name='Японское Название') 
+    title_jp = models.CharField(max_length=255, blank=True, null=True, verbose_name='Японское название')
+    previous_evolution = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, blank=True, null=True, related_name='next_evolution', verbose_name='Из кого эволюционировал'
+    )
+
 
     def __str__(self):
         return f'{self.title}'
