@@ -88,6 +88,8 @@ def show_pokemon(request, pokemon_id):
     pokemon_chars = {
         'pokemon_id': requested_pokemon.id,
         'title_ru': requested_pokemon.title,
+        'title_en': requested_pokemon.title_en,
+        'title_jp': requested_pokemon.title_jp,
         'description': requested_pokemon.description,
         'img_url': request.build_absolute_uri(requested_pokemon.image.url) if requested_pokemon.image else DEFAULT_IMAGE_URL,
         'entities': active_pokemon_entities,
