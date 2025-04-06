@@ -11,15 +11,15 @@ class Pokemon(models.Model):
         verbose_name='Изображение'
         )
     description = models.TextField(
-        blank=True, null=True,
+        blank=True,
         verbose_name='Описание'
         )
     title_en = models.CharField(
-        max_length=255, blank=True, null=True,
+        max_length=255, blank=True,
         verbose_name='Английское название'
         )
     title_jp = models.CharField(
-        max_length=255, blank=True, null=True,
+        max_length=255, blank=True,
         verbose_name='Японское название'
         )
     previous_evolution = models.ForeignKey(
@@ -52,23 +52,23 @@ class PokemonEntity(models.Model):
         blank=True, null=True,
         verbose_name='Когда исчезнет'
         )
-    level = models.IntegerField(
-        default=1,
+    level = models.PositiveIntegerField(
+        blank=True, null=True,
         verbose_name='Уровень'
         )
-    health = models.IntegerField(
+    health = models.PositiveIntegerField(
         blank=True, null=True,
         verbose_name='Количество жизни'
         )
-    strength = models.IntegerField(
+    strength = models.PositiveIntegerField(
         blank=True, null=True,
         verbose_name='Сила'
         )
-    defence = models.IntegerField(
+    defence = models.PositiveIntegerField(
         blank=True, null=True,
         verbose_name='Защита'
         )
-    stamina = models.IntegerField(
+    stamina = models.PositiveIntegerField(
         blank=True, null=True,
         verbose_name='Выносливость'
         )
